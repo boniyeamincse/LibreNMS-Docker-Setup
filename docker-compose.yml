@@ -1,0 +1,51 @@
+version: '3.7'
+
+services:
+  db:
+    image: mariadb:10.5
+    container_name: librenms-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_here
+      MYSQL_DATABASE: librenms
+      MYSQL_USER: librenms
+      MYSQL_PASSWORD: librenms_password_here
+    volumes:
+      - db_data:/var/lib/mysql
+
+  librenms:
+    image: librenms/librenms:latest
+    container_name: librenms
+    hostname: librenms
+    restart: always
+    environment:
+      DB_HOST: db
+      DB_NAME: librenms
+      DB_USER: librenms
+      DB_PASS: librenms_password_here
+    volumes:
+      - librenms_data:/data
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:alpine
+    container_name: librenms-nginx
+    restart: always
+    ports:
+      - "10.24.1.40:80:80"
+      - "10.24.1.40:443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - librenms_data:/usr/share/nginx/html:ro
+    depends_on:
+      - librenms
+
+volumes:
+  db_data:
+  librenms_data:
+
+networks:
+  default:
+    driver: bridge
